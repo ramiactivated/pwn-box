@@ -5,8 +5,12 @@ echo "=== INICIANDO INSTALACIÓN DE HERRAMIENTAS CTF ==="
 apt-get update -y
 apt-get upgrade -y
 
-# 2. Instalar herramientas básicas de los repositorios de Debian
+# 2. Instalar herramientas básicas
 apt-get install -y nmap ffuf gobuster git curl wget python3 python3-pip unzip sudo
+
+# 2.5 Instalar dependencias para el Autohack Avanzado (Web y SMB)
+echo "=== INSTALANDO HERRAMIENTAS DE ANÁLISIS PROFUNDO ==="
+apt-get install -y nikto whatweb enum4linux smbclient
 
 # 3. Descargar SecLists (Diccionarios para Fuzzing)
 echo "Descargando SecLists..."
@@ -36,9 +40,8 @@ echo "Instalando Docker..."
 apt-get install -y docker.io
 systemctl enable docker
 
-# 6. Mover scripts personalizados (Paso C)
+# 6. Mover scripts personalizados a binarios globales
 echo "=== CONFIGURANDO COMANDOS GLOBALES ==="
-
 # Mover ctf-recon
 mv /tmp/scripts/ctf-recon.sh /usr/local/bin/ctf-recon
 chmod +x /usr/local/bin/ctf-recon
@@ -47,7 +50,7 @@ chmod +x /usr/local/bin/ctf-recon
 mv /tmp/scripts/revshell.sh /usr/local/bin/revshell
 chmod +x /usr/local/bin/revshell
 
-# Mover autohack (¡LA NUEVA HERRAMIENTA!)
+# Mover autohack
 mv /tmp/scripts/autohack.sh /usr/local/bin/autohack
 chmod +x /usr/local/bin/autohack
 
