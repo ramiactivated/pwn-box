@@ -1,0 +1,6 @@
+output-ctf-box/
+packer_cache/
+.vagrant/
+*.iso
+*.vmdk
+*.vdi
