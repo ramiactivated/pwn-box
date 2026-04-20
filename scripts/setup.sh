@@ -1,61 +1,63 @@
 #!/bin/bash
-echo "=== INICIANDO INSTALACIÓN DE HERRAMIENTAS CTF ==="
+set -e # Detiene la instalación si ocurre un error crítico
 
-# 1. Actualizar el sistema
+echo "================================================="
+echo "   [!] INICIANDO DESPLIEGUE DE INFRAESTRUCTURA   "
+echo "================================================="
+
+# 1. Actualización y Herramientas Base (Incluye OpenVPN para CTFs)
+echo "[+] 1/6 Actualizando repositorios e instalando base..."
 apt-get update -y
-apt-get upgrade -y
+apt-get install -y curl wget git python3 nmap docker.io zsh openvpn unzip python3-pip
 
-# 2. Instalar herramientas básicas
-apt-get install -y nmap ffuf gobuster git curl wget python3 python3-pip unzip sudo
+# 2. Dependencias de Perl y WhatWeb (Para herramientas ofensivas)
+echo "[+] 2/6 Instalando dependencias de red y Perl..."
+apt-get install -y perl smbclient samba-common-bin rpcclient whatweb
+apt-get install -y libjson-perl libxml-writer-perl libnet-ssleay-perl
 
-# 2.5 Instalar dependencias para el Autohack Avanzado (Web y SMB)
-echo "=== INSTALANDO HERRAMIENTAS DE ANÁLISIS PROFUNDO ==="
-apt-get install -y nikto whatweb enum4linux smbclient
+# 3. Instalación de herramientas manuales (GitHub)
+echo "[+] 3/6 Clonando herramientas desde GitHub..."
+# Nikto
+if [ ! -d "/opt/nikto" ]; then
+    git clone https://github.com/sullo/nikto /opt/nikto
+    ln -sf /opt/nikto/program/nikto.pl /usr/local/bin/nikto
+fi
 
-# 3. Descargar SecLists (Diccionarios para Fuzzing)
-echo "Descargando SecLists..."
+# Enum4linux
+if [ ! -d "/opt/enum4linux" ]; then
+    git clone https://github.com/CiscoCXSecurity/enum4linux /opt/enum4linux
+    ln -sf /opt/enum4linux/enum4linux.pl /usr/local/bin/enum4linux
+fi
+
+# 4. Diccionarios (SecLists)
+echo "[+] 4/6 Descargando SecLists (Diccionarios)..."
 mkdir -p /usr/share/seclists
-git clone --depth 1 https://github.com/danielmiessler/SecLists.git /usr/share/seclists
+if [ ! -d "/usr/share/seclists/Discovery" ]; then
+    git clone https://github.com/danielmiessler/SecLists.git /usr/share/seclists
+fi
 
-# 4. Configurar Estética (Zsh, Starship y MOTD)
-echo "=== CONFIGURANDO ESTÉTICA ==="
-apt-get install -y zsh figlet tmux
-curl -sS https://starship.rs/install.sh | sh -s -- -y
-echo 'eval "$(starship init zsh)"' >> /etc/zsh/zshrc
-chsh -s $(which zsh) root
-
-# Crear el Banner de Bienvenida
-figlet -f slant "PWN BOX" > /etc/motd
-echo "Distro CTF Optimizada | Debian 12 Base" >> /etc/motd
-echo "----------------------------------------" >> /etc/motd
-
-# 5. Configurar Arsenal Avanzado (LinPEAS y Docker)
-echo "=== CONFIGURANDO ARSENAL AVANZADO ==="
+# 5. Herramientas de Escalada de Privilegios
+echo "[+] 5/6 Descargando LinPEAS..."
 mkdir -p /opt/privesc
-echo "Descargando LinPEAS..."
-wget -q https://github.com/peass-ng/PEASS-ng/releases/latest/download/linpeas.sh -O /opt/privesc/linpeas.sh
+wget -q https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh -O /opt/privesc/linpeas.sh
 chmod +x /opt/privesc/linpeas.sh
 
-echo "Instalando Docker..."
-apt-get install -y docker.io
-systemctl enable docker
+# 6. Vacuna Windows y Configuración de Comandos Globales
+echo "[+] 6/6 Inmunizando scripts y creando accesos globales..."
 
-# 6. Mover scripts personalizados a binarios globales
-echo "=== CONFIGURANDO COMANDOS GLOBALES ==="
-
-# ¡LA VACUNA!: Limpiar caracteres de Windows (CRLF) de todos los scripts
+# LA VACUNA: Limpia los saltos de línea de Windows (CRLF a LF) en todos los scripts
 sed -i 's/\r$//' /tmp/scripts/*.sh
 
-# Mover ctf-recon
-mv /tmp/scripts/ctf-recon.sh /usr/local/bin/ctf-recon
-chmod +x /usr/local/bin/ctf-recon
+# Mover y dar permisos a los scripts personalizados
+mv /tmp/scripts/ctf-recon.sh /usr/local/bin/ctf-recon 2>/dev/null || true
+chmod +x /usr/local/bin/ctf-recon 2>/dev/null || true
 
-# Mover revshell
-mv /tmp/scripts/revshell.sh /usr/local/bin/revshell
-chmod +x /usr/local/bin/revshell
+mv /tmp/scripts/revshell.sh /usr/local/bin/revshell 2>/dev/null || true
+chmod +x /usr/local/bin/revshell 2>/dev/null || true
 
-# Mover autohack
 mv /tmp/scripts/autohack.sh /usr/local/bin/autohack
 chmod +x /usr/local/bin/autohack
 
-echo "=== INSTALACIÓN COMPLETADA CON ÉXITO ==="
+echo "================================================="
+echo "   [✓] INFRAESTRUCTURA DESPLEGADA CON ÉXITO      "
+echo "================================================="
