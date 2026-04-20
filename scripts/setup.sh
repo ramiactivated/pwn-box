@@ -15,19 +15,33 @@ echo "[+] 2/6 Instalando dependencias de red y Perl..."
 apt-get install -y perl smbclient samba-common-bin whatweb
 apt-get install -y libjson-perl libxml-writer-perl libnet-ssleay-perl
 
-# 3. Instalación de herramientas manuales (GitHub)
-echo "[+] 3/6 Clonando herramientas desde GitHub..."
-# Nikto
+# 3. Instalación de herramientas avanzadas (GitHub, Ruby y Go)
+echo "[+] 3/6 Clonando herramientas y compilando arsenal avanzado..."
+
+# Nikto y Enum4linux
 if [ ! -d "/opt/nikto" ]; then
     git clone https://github.com/sullo/nikto /opt/nikto
     ln -sf /opt/nikto/program/nikto.pl /usr/local/bin/nikto
 fi
-
-# Enum4linux
 if [ ! -d "/opt/enum4linux" ]; then
     git clone https://github.com/CiscoCXSecurity/enum4linux /opt/enum4linux
     ln -sf /opt/enum4linux/enum4linux.pl /usr/local/bin/enum4linux
 fi
+
+# WPScan (Requiere entorno Ruby)
+echo "  ├── Instalando WPScan..."
+apt-get install -y ruby-dev
+gem install wpscan > /dev/null 2>&1
+
+# Nuclei (Requiere entorno Go)
+echo "  └── Instalando y configurando Nuclei..."
+apt-get install -y golang
+export GOPATH=/root/go
+export PATH=$PATH:$GOPATH/bin
+go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest > /dev/null 2>&1
+ln -sf /root/go/bin/nuclei /usr/local/bin/nuclei
+# Pre-descargamos las plantillas para ahorrar tiempo en los escaneos
+nuclei -update-templates > /dev/null 2>&1
 
 # 4. Diccionarios (SecLists)
 echo "[+] 4/6 Descargando SecLists (Diccionarios)..."

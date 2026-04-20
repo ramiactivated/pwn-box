@@ -81,7 +81,7 @@ nmap -p"$PUERTOS" -sC -sV "$IP" -oN "$TARGET/nmap_target.txt" > /dev/null &
 # ==========================================
 echo -e "${C_CYAN}[+] FASE 3: Desplegando módulos ofensivos en segundo plano...${RESET}"
 
-# --- MÓDULO WEB (HTTP/HTTPS Inteligente) ---
+# --- MÓDULO WEB (HTTP/HTTPS Inteligente + Arsenal Expandido) ---
 if [[ "$PUERTOS" == *"80"* ]] || [[ "$PUERTOS" == *"443"* ]]; then
     PROTOCOLO="http"
     [[ "$PUERTOS" == *"443"* ]] && PROTOCOLO="https"
@@ -89,7 +89,23 @@ if [[ "$PUERTOS" == *"80"* ]] || [[ "$PUERTOS" == *"443"* ]]; then
     echo -e "  ${C_VERDE}├── [Web]${RESET} Lanzando Ffuf, WhatWeb y Nikto sobre $PROTOCOLO..."
     ffuf -u "$PROTOCOLO://$TARGET/FUZZ" -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -t 50 -c > "$TARGET/web_fuzzing.txt" 2>/dev/null &
     whatweb "$PROTOCOLO://$TARGET" > "$TARGET/web_tecnologias.txt" &
-    nikto -h "$PROTOCOLO://$TARGET" -Tuning 123 -o "$TARGET/web_vulnerabilidades.txt" 2>/dev/null &
+    nikto -h "$PROTOCOLO://$TARGET" -Tuning 123 -o "$TARGET/web_vulnerabilidades.txt" > /dev/null 2>&1 &
+
+    # MÓDULO: Arsenal Moderno (Nuclei)
+    echo -e "  ${C_VERDE}├── [Nuclei]${RESET} Desplegando escáner de vulnerabilidades de nueva generación..."
+    nuclei -u "$PROTOCOLO://$TARGET" -silent -o "$TARGET/nuclei_report.txt" > /dev/null 2>&1 &
+
+    # MÓDULO: Especialista CMS (Detección rápida de WordPress)
+    if curl -s -L "$PROTOCOLO://$TARGET" | grep -qi "wp-content"; then
+        echo -e "  ${C_AMARILLO}├── [WPScan]${RESET} ¡WordPress detectado! Iniciando fuerza bruta de usuarios y plugins..."
+        wpscan --url "$PROTOCOLO://$TARGET" --enumerate u,vp,vt --random-user-agent --batch > "$TARGET/wpscan_report.txt" > /dev/null 2>&1 &
+    fi
+
+    # MÓDULO: Cazador de Subdominios (Solo si el objetivo es un dominio y no una IP)
+    if [[ "$TARGET" =~ [a-zA-Z] ]]; then
+        echo -e "  ${C_CYAN}├── [Subdominios]${RESET} Fuzzeando Virtual Hosts en segundo plano..."
+        ffuf -u "$PROTOCOLO://$TARGET" -H "Host: FUZZ.$TARGET" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -t 50 -c > "$TARGET/subdominios.txt" 2>/dev/null &
+    fi
 fi
 
 # --- MÓDULO FTP ---
