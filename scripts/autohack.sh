@@ -7,17 +7,20 @@ AMARILLO="\e[33m"
 AZUL="\e[34m"
 RESET="\e[0m"
 
-TARGET=$1
+# 1. Recoger entrada y limpieza automática de URLs (quita http:// y barras)
+INPUT=$1
 
-if [ -z "$TARGET" ]; then
+if [ -z "$INPUT" ]; then
   echo -e "\n${ROJO}[!] Error: Necesito un objetivo.${RESET}"
   echo -e "Uso: autohack <IP o DOMINIO>\n"
   exit 1
 fi
 
-# Traductor Mágico: Convierte el dominio a IP (si ya es IP, la deja igual)
+TARGET=$(echo $INPUT | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+
+# 2. Traductor Mágico (Seguro contra IPv6 usando getent)
 echo -e "${AMARILLO}[*] Resolviendo objetivo: $TARGET...${RESET}"
-IP=$(python3 -c "import sys, socket; print(socket.gethostbyname(sys.argv[1]))" "$TARGET" 2>/dev/null)
+IP=$(getent ahostsv4 "$TARGET" | head -n 1 | awk '{print $1}')
 
 if [ -z "$IP" ]; then
   echo -e "${ROJO}[!] Error: No se pudo resolver $TARGET. ¿Lo has añadido a /etc/hosts?${RESET}"
@@ -31,9 +34,9 @@ echo -e "${AZUL}=================================================${RESET}"
 # Creamos la carpeta con el nombre (o la IP)
 mkdir -p "$TARGET"
 
-# Nmap usa la IP para mantener la velocidad extrema (-n)
-echo -e "${AMARILLO}[+] Fase 1: Escaneo rápido de los 65535 puertos...${RESET}"
-nmap -p- --min-rate 5000 -n -Pn $IP -oG "$TARGET/allPorts.txt" > /dev/null
+# 3. Fase 1: Escaneo optimizado (Top 1000 puertos y menos ruido para evitar firewalls)
+echo -e "${AMARILLO}[+] Fase 1: Escaneo inicial de los 1000 puertos más comunes...${RESET}"
+nmap --top-ports 1000 --min-rate 1000 -T4 -n -Pn $IP -oG "$TARGET/allPorts.txt" > /dev/null
 
 PUERTOS=$(cat "$TARGET/allPorts.txt" | grep -Po '\d{1,5}/open' | awk -F '/' '{print $1}' | paste -sd, -)
 
@@ -46,17 +49,23 @@ echo -e "${VERDE}[+] ¡Puertos descubiertos!: $PUERTOS${RESET}"
 echo -e "${AMARILLO}[+] Fase 2: Lanzando análisis profundo de Nmap...${RESET}"
 nmap -p$PUERTOS -sC -sV $IP -oN "$TARGET/nmap_target.txt" > /dev/null &
 
-# --- ANÁLISIS WEB AVANZADO (Usan TARGET para no perderse los Virtual Hosts) ---
+# --- ANÁLISIS WEB AVANZADO (Inteligente HTTP/HTTPS) ---
 if [[ $PUERTOS == *"80"* ]] || [[ $PUERTOS == *"443"* ]]; then
-   echo -e "${VERDE}[!] Servicio Web detectado.${RESET}"
+   # Lógica inteligente: Si el 443 está abierto, usamos HTTPS
+   PROTOCOLO="http"
+   if [[ $PUERTOS == *"443"* ]]; then
+       PROTOCOLO="https"
+   fi
+
+   echo -e "${VERDE}[!] Servicio Web detectado ($PROTOCOLO).${RESET}"
    echo -e "  ├── Lanzando Fuzzing de directorios..."
-   ffuf -u http://$TARGET/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -t 50 -c > "$TARGET/web_fuzzing.txt" 2>/dev/null &
+   ffuf -u $PROTOCOLO://$TARGET/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -t 50 -c > "$TARGET/web_fuzzing.txt" 2>/dev/null &
    
    echo -e "  ├── Extrayendo tecnologías (WhatWeb)..."
-   whatweb $TARGET > "$TARGET/web_tecnologias.txt" &
+   whatweb $PROTOCOLO://$TARGET > "$TARGET/web_tecnologias.txt" &
    
    echo -e "  └── Buscando vulnerabilidades (Nikto)..."
-   nikto -h $TARGET -Tuning 123 -o "$TARGET/web_vulnerabilidades.txt" 2>/dev/null &
+   nikto -h $PROTOCOLO://$TARGET -Tuning 123 -o "$TARGET/web_vulnerabilidades.txt" 2>/dev/null &
 fi
 
 # --- ANÁLISIS FTP ---
