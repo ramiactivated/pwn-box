@@ -12,7 +12,7 @@ apt-get install -y curl wget git python3 nmap docker.io zsh openvpn unzip python
 
 # 2. Dependencias de Perl y WhatWeb (Para herramientas ofensivas)
 echo "[+] 2/6 Instalando dependencias de red y Perl..."
-apt-get install -y perl smbclient samba-common-bin rpcclient whatweb
+apt-get install -y perl smbclient samba-common-bin whatweb
 apt-get install -y libjson-perl libxml-writer-perl libnet-ssleay-perl
 
 # 3. Instalación de herramientas manuales (GitHub)
