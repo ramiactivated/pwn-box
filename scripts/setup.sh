@@ -42,6 +42,10 @@ systemctl enable docker
 
 # 6. Mover scripts personalizados a binarios globales
 echo "=== CONFIGURANDO COMANDOS GLOBALES ==="
+
+# ¡LA VACUNA!: Limpiar caracteres de Windows (CRLF) de todos los scripts
+sed -i 's/\r$//' /tmp/scripts/*.sh
+
 # Mover ctf-recon
 mv /tmp/scripts/ctf-recon.sh /usr/local/bin/ctf-recon
 chmod +x /usr/local/bin/ctf-recon
