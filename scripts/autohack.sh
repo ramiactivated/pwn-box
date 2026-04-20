@@ -57,7 +57,7 @@ mkdir -p "$TARGET"
 # ==========================================
 echo -e "${C_CYAN}[+] FASE 1: Escaneando los 1000 puertos principales...${RESET}"
 # Usamos min-rate 1000 para no saturar firewalls, pero mantener velocidad
-nmap --top-ports 1000 -T4 -n -Pn "$IP" -oG "$TARGET/allPorts.txt" > /dev/null
+nmap -sT --top-ports 1000 -T4 -n -Pn "$IP" -oG "$TARGET/allPorts.txt" > /dev/null
 
 # Extraer puertos limpios separados por comas
 PUERTOS=$(grep -Po '\d{1,5}/open' "$TARGET/allPorts.txt" | awk -F '/' '{print $1}' | paste -sd, -)
