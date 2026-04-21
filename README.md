@@ -1,5 +1,8 @@
 # 🛡️ PwnBox: Laboratorio CTF y Entorno Red Team Automatizado
 
+<p align="center">
+  <img src="banner.png" alt="Autohack en acción" width="800">
+</p>
 Este proyecto utiliza **Packer** e **Infraestructura como Código (IaC)** para desplegar una máquina virtual Debian 12 ofensiva, configurada con cero toques (*Zero-Touch Provisioning*) y lista para asaltar plataformas como HackTheBox, TryHackMe o entornos de auditoría reales.
 
 ---
